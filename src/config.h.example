@@ -1,0 +1,11 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// WiFi and API configuration
+const char* ssid = "";        // Your WiFi network name
+const char* password = "";    // Your WiFi password
+const char* apiEndpoint = ""; // Your API endpoint URL
+const char* authToken = "";   // Your API authentication token
+const char* deviceId = "";    // Your device identifier
+
+#endif 

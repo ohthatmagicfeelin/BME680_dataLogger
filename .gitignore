@@ -1,0 +1,24 @@
+# Config file with sensitive data
+src/config.h
+
+# PlatformIO specific
+.pio
+.vscode/.browse.c_cpp.db*
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch
+
+# Build outputs
+build/
+*.o
+*.d
+*.bin
+*.elf
+
+# IDE specific
+.vscode/
+.idea/
+
+# OS specific
+.DS_Store
+Thumbs.db
