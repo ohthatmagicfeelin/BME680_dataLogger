@@ -212,18 +212,18 @@ bool isNightTime() {
   Serial.printf("Current time: %02d:%02d:%02d\n", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
   Serial.printf("Night time period: %02d:00 - %02d:00\n", NIGHT_START_HOUR, NIGHT_END_HOUR);
   
-  // Night time is between NIGHT_START_HOUR and NIGHT_END_HOUR
-  if (NIGHT_START_HOUR > NIGHT_END_HOUR) {
-    // Night spans across midnight
-    bool isNight = (currentHour >= NIGHT_START_HOUR || currentHour < NIGHT_END_HOUR);
-    Serial.printf("Is night time: %s\n", isNight ? "Yes" : "No");
-    return isNight;
-  } else {
-    // Night is within same day
-    bool isNight = (currentHour >= NIGHT_START_HOUR && currentHour < NIGHT_END_HOUR);
-    Serial.printf("Is night time: %s\n", isNight ? "Yes" : "No");
-    return isNight;
-  }
+  // For hours between 21:00 (9 PM) and 23:59 (11:59 PM)
+  bool isLateNight = (currentHour >= NIGHT_START_HOUR);
+  // For hours between 00:00 (12 AM) and 06:00 (6 AM)
+  bool isEarlyMorning = (currentHour < NIGHT_END_HOUR);
+  
+  bool isNight = isLateNight || isEarlyMorning;
+  Serial.printf("Is night time: %s (Late night: %s, Early morning: %s)\n", 
+                isNight ? "Yes" : "No",
+                isLateNight ? "Yes" : "No",
+                isEarlyMorning ? "Yes" : "No");
+                
+  return isNight;
 }
 
 // Function to initialize time
