@@ -9,6 +9,7 @@
 #include "esp_sleep.h"
 #include <vector>
 #include "config.h"
+#include <ArduinoJson.h>
 
 // Sleep configuration
 const uint64_t ONE_SECOND = 1000000; // 1 microsecond = 10^-6 seconds
@@ -130,45 +131,47 @@ bool sendDataToAPI(const std::vector<StoredReading>& readings) {
     authHeader += authToken;
     http.addHeader("Authorization", authHeader);
     
-    // Build JSON array of readings
-    String payload = "[";
+    DynamicJsonDocument doc(4096);  // Adjust size as needed
+    JsonArray array = doc.to<JsonArray>();
     
-    for (size_t i = 0; i < readings.size(); i++) {
-      const auto& reading = readings[i];
-      
-      // Convert Unix timestamp to ISO 8601 format
+    for (const auto& reading : readings) {
+      // Convert timestamp
       char timeStr[30];
       struct tm * timeinfo;
       timeinfo = gmtime(&reading.timestamp);
       strftime(timeStr, sizeof(timeStr), "%Y-%m-%dT%H:%M:%S.000Z", timeinfo);
       
       // Add temperature reading
-      if (i > 0) payload += ",";
-      payload += "{\"type\":\"temperature\",";
-      payload += "\"value\":" + String(reading.temperature, 2) + ",";
-      payload += "\"deviceId\":\"" + String(deviceId) + "\",";
-      payload += "\"timestamp\":\"" + String(timeStr) + "\"}";
+      JsonObject tempReading = array.createNestedObject();
+      tempReading["type"] = "temperature";
+      tempReading["value"] = reading.temperature;
+      tempReading["deviceId"] = deviceId;
+      tempReading["timestamp"] = timeStr;
       
       // Add humidity reading
-      payload += ",{\"type\":\"humidity\",";
-      payload += "\"value\":" + String(reading.humidity, 2) + ",";
-      payload += "\"deviceId\":\"" + String(deviceId) + "\",";
-      payload += "\"timestamp\":\"" + String(timeStr) + "\"}";
+      JsonObject humReading = array.createNestedObject();
+      humReading["type"] = "humidity";
+      humReading["value"] = reading.humidity;
+      humReading["deviceId"] = deviceId;
+      humReading["timestamp"] = timeStr;
       
       // Add pressure reading
-      payload += ",{\"type\":\"pressure\",";
-      payload += "\"value\":" + String(reading.pressure, 2) + ",";
-      payload += "\"deviceId\":\"" + String(deviceId) + "\",";
-      payload += "\"timestamp\":\"" + String(timeStr) + "\"}";
+      JsonObject presReading = array.createNestedObject();
+      presReading["type"] = "pressure";
+      presReading["value"] = reading.pressure;
+      presReading["deviceId"] = deviceId;
+      presReading["timestamp"] = timeStr;
       
       // Add air quality reading
-      payload += ",{\"type\":\"air_quality\",";
-      payload += "\"value\":" + String(reading.gas, 2) + ",";
-      payload += "\"deviceId\":\"" + String(deviceId) + "\",";
-      payload += "\"timestamp\":\"" + String(timeStr) + "\"}";
+      JsonObject gasReading = array.createNestedObject();
+      gasReading["type"] = "air_quality";
+      gasReading["value"] = reading.gas;
+      gasReading["deviceId"] = deviceId;
+      gasReading["timestamp"] = timeStr;
     }
     
-    payload += "]";
+    String payload;
+    serializeJson(doc, payload);
     
     Serial.println("Sending payload: " + payload);
     
