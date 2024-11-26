@@ -5,7 +5,7 @@
 
 // Sleep configuration
 static const uint64_t ONE_SECOND = 1000000;
-static const uint64_t SLEEP_TIME = 10 * ONE_SECOND;
+static const uint64_t SLEEP_TIME = 10 * 60 * ONE_SECOND;
 static const int MAX_RETRIES = 3;
 static const int RETRY_DELAY = 5000;
 
