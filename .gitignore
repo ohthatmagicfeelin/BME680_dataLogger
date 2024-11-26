@@ -1,5 +1,5 @@
 # Config file with sensitive data
-src/config.h
+include/auth_config.h
 
 # PlatformIO specific
 .pio

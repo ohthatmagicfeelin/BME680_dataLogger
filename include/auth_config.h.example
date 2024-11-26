@@ -1,5 +1,5 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef AUTH_CONFIG_H
+#define AUTH_CONFIG_H
 
 // WiFi and API configuration
 const char* ssid = "";        // Your WiFi network name
