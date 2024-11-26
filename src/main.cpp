@@ -42,6 +42,8 @@ struct RTC_DATA_ATTR StoredReading {
 
 RTC_DATA_ATTR std::vector<StoredReading> storedReadings;
 RTC_DATA_ATTR bool timeInitialized = false;
+RTC_DATA_ATTR time_t lastKnownTime = 0;
+RTC_DATA_ATTR int bootCount = 0;
 
 bool connectToWiFi() {
   WiFi.begin(ssid, password);
@@ -190,8 +192,11 @@ bool sendDataToAPI(const std::vector<StoredReading>& readings) {
 }
 
 void goToSleep() {
+  // Store current time before sleep
+  time(&lastKnownTime);
+  
   Serial.println("Going to sleep for " + String(SLEEP_TIME / 1000000) + " seconds");
-  Serial.flush();  // Ensure all Serial data is sent before sleep
+  Serial.flush();
   WiFi.disconnect(true);
   WiFi.mode(WIFI_OFF);
   esp_sleep_enable_timer_wakeup(SLEEP_TIME);
@@ -228,28 +233,30 @@ bool isNightTime() {
 
 // Function to initialize time
 void initializeTime() {
-  if (!timeInitialized) {
-    struct tm timeinfo;
+  bootCount++;
+  
+  if (connectToWiFi()) {
+    // Get time from NTP
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-    
-    // Wait for time to be set
-    int retry = 0;
-    const int retryLimit = 10;
-    Serial.println("Waiting for NTP time sync");
-    
-    while (!getLocalTime(&timeinfo) && retry < retryLimit) {
-      Serial.print(".");
-      delay(1000);
-      retry++;
-    }
-    
-    if (retry < retryLimit) {
-      Serial.println("\nTime synchronized!");
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
+      time(&lastKnownTime);
+      Serial.println("Time synchronized from NTP!");
       timeInitialized = true;
-    } else {
-      Serial.println("\nFailed to sync time");
     }
+  } else if (lastKnownTime > 0) {
+    // If we can't connect to WiFi, use the last known time plus sleep duration
+    lastKnownTime += (SLEEP_TIME / 1000000); // Convert microseconds to seconds
+    struct timeval tv = { .tv_sec = lastKnownTime };
+    settimeofday(&tv, NULL);
+    Serial.println("Using stored time + sleep duration");
   }
+  
+  // Debug print
+  struct tm timeinfo;
+  getLocalTime(&timeinfo);
+  Serial.printf("Boot count: %d\n", bootCount);
+  Serial.printf("Current time: %02d:%02d:%02d\n", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
 
 // Function to store reading
