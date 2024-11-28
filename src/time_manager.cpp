@@ -1,5 +1,6 @@
 #include "time_manager.hpp"
 #include "config.hpp"
+#include "network.hpp"
 #include <time.h>
 #include <Arduino.h>
 #include <WiFi.h>
@@ -7,6 +8,9 @@
 extern RTC_DATA_ATTR time_t lastKnownTime;
 extern RTC_DATA_ATTR bool timeInitialized;
 extern RTC_DATA_ATTR int bootCount;
+
+// Add this global variable to track test start time
+RTC_DATA_ATTR static time_t debugStartTime = 0;
 
 void initializeTime() {
     bootCount++;
@@ -50,26 +54,39 @@ void initializeTime() {
 
 bool isNightTime() {
     struct tm timeinfo;
+    time_t now;
+    time(&now);
+    
     if(!getLocalTime(&timeinfo)) {
         Serial.println("Failed to obtain time");
         return false;
     }
     
+    // Initialize debug start time if needed
+    if (DEBUG_MODE && debugStartTime == 0) {
+        debugStartTime = now;
+        Serial.printf("Debug test started at: %ld\n", debugStartTime);
+    }
+    
+    // In debug mode, check if we're within the test window
+    if (DEBUG_MODE && DEBUG_FORCE_NIGHT) {
+        time_t elapsed = now - debugStartTime;
+        bool isWithinTestWindow = elapsed < DEBUG_TEST_DURATION;
+        
+        Serial.printf("Debug test elapsed time: %ld seconds\n", elapsed);
+        Serial.printf("Remaining test time: %ld seconds\n", 
+                     isWithinTestWindow ? DEBUG_TEST_DURATION - elapsed : 0);
+        Serial.printf("Is within test window: %s\n", 
+                     isWithinTestWindow ? "Yes (Night time)" : "No (Day time)");
+        
+        return isWithinTestWindow;
+    }
+    
+    // Normal night time logic
     const int currentHour = timeinfo.tm_hour;
-    
-    Serial.printf("Current time: %02d:%02d:%02d\n", 
-                 timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-    Serial.printf("Night time period: %02d:00 - %02d:00\n", 
-                 NIGHT_START_HOUR, NIGHT_END_HOUR);
-    
     const bool isLateNight = (currentHour >= NIGHT_START_HOUR);
     const bool isEarlyMorning = (currentHour < NIGHT_END_HOUR);
     const bool isNight = isLateNight || isEarlyMorning;
-    
-    Serial.printf("Is night time: %s (Late night: %s, Early morning: %s)\n", 
-                 isNight ? "Yes" : "No",
-                 isLateNight ? "Yes" : "No",
-                 isEarlyMorning ? "Yes" : "No");
     
     return isNight;
 }

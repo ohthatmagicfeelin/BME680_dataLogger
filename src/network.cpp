@@ -6,7 +6,7 @@
 #include <ArduinoJson.h>
 #include "auth_config.h"
 
-extern std::vector<StoredReading> storedReadings;
+extern RTC_DATA_ATTR StoredReadingsBuffer storedReadings;
 
 bool connectToWiFi() {
     WiFi.begin(ssid, password);
@@ -28,7 +28,9 @@ bool connectToWiFi() {
     return false;
 }
 
-bool sendDataToAPI(const std::vector<StoredReading>& readings) {
+bool sendDataToAPI(const StoredReading readings[], int count) {
+    if (count == 0) return true;
+    
     WiFiClientSecure *client = new WiFiClientSecure;
     client->setInsecure();
     client->setTimeout(10000);
@@ -46,37 +48,37 @@ bool sendDataToAPI(const std::vector<StoredReading>& readings) {
         JsonDocument doc;
         JsonArray array = doc.to<JsonArray>();
         
-        for (const auto& reading : readings) {
+        for (int i = 0; i < count; i++) {
             char timeStr[30];
             struct tm * timeinfo;
-            timeinfo = gmtime(&reading.timestamp);
+            timeinfo = gmtime(&readings[i].timestamp);
             strftime(timeStr, sizeof(timeStr), "%Y-%m-%dT%H:%M:%S.000Z", timeinfo);
             
             // Temperature
             JsonObject tempReading = array.add<JsonObject>();
             tempReading["type"] = "temperature";
-            tempReading["value"] = reading.temperature;
+            tempReading["value"] = readings[i].temperature;
             tempReading["deviceId"] = deviceId;
             tempReading["timestamp"] = timeStr;
             
             // Humidity
             JsonObject humReading = array.add<JsonObject>();
             humReading["type"] = "humidity";
-            humReading["value"] = reading.humidity;
+            humReading["value"] = readings[i].humidity;
             humReading["deviceId"] = deviceId;
             humReading["timestamp"] = timeStr;
             
             // Pressure
             JsonObject presReading = array.add<JsonObject>();
             presReading["type"] = "pressure";
-            presReading["value"] = reading.pressure;
+            presReading["value"] = readings[i].pressure;
             presReading["deviceId"] = deviceId;
             presReading["timestamp"] = timeStr;
             
             // Air Quality
             JsonObject gasReading = array.add<JsonObject>();
             gasReading["type"] = "air_quality";
-            gasReading["value"] = reading.gas;
+            gasReading["value"] = readings[i].gas;
             gasReading["deviceId"] = deviceId;
             gasReading["timestamp"] = timeStr;
         }
@@ -105,24 +107,86 @@ bool sendDataToAPI(const std::vector<StoredReading>& readings) {
 }
 
 bool sendStoredReadings() {
-    if (storedReadings.empty()) {
+    if (storedReadings.count == 0) {
         Serial.println("No stored readings to send");
         return true;
     }
 
-    bool allSent = true;
+    Serial.printf("Attempting to send %d stored readings\n", storedReadings.count);
+    bool success = false;
     
     if (!connectToWiFi()) {
         Serial.println("Failed to connect to WiFi, will try again next wake cycle");
         return false;
     }
 
-    allSent = sendDataToAPI(storedReadings);
+    // Create JSON array for all readings
+    JsonDocument doc;
+    JsonArray array = doc.to<JsonArray>();
 
-    if (allSent) {
-        Serial.println("All stored readings sent successfully");
-        storedReadings.clear();
+    for (int i = 0; i < storedReadings.count; i++) {
+        const StoredReading& reading = storedReadings.readings[i];
+        
+        // Convert timestamp to ISO 8601 format
+        char timeStr[30];
+        struct tm* timeinfo = gmtime(&reading.timestamp);
+        strftime(timeStr, sizeof(timeStr), "%Y-%m-%dT%H:%M:%S.000Z", timeinfo);
+        
+        // Temperature
+        JsonObject tempReading = array.add<JsonObject>();
+        tempReading["type"] = "temperature";
+        tempReading["value"] = reading.temperature;
+        tempReading["deviceId"] = deviceId;
+        tempReading["timestamp"] = timeStr;
+        
+        // Humidity
+        JsonObject humReading = array.add<JsonObject>();
+        humReading["type"] = "humidity";
+        humReading["value"] = reading.humidity;
+        humReading["deviceId"] = deviceId;
+        humReading["timestamp"] = timeStr;
+        
+        // Pressure
+        JsonObject pressReading = array.add<JsonObject>();
+        pressReading["type"] = "pressure";
+        pressReading["value"] = reading.pressure;
+        pressReading["deviceId"] = deviceId;
+        pressReading["timestamp"] = timeStr;
+        
+        // Air Quality
+        JsonObject gasReading = array.add<JsonObject>();
+        gasReading["type"] = "air_quality";
+        gasReading["value"] = reading.gas;
+        gasReading["deviceId"] = deviceId;
+        gasReading["timestamp"] = timeStr;
     }
-
-    return allSent;
+    
+    String payload;
+    serializeJson(doc, payload);
+    Serial.println("Sending payload: " + payload);
+    
+    HTTPClient http;
+    http.begin(apiEndpoint);
+    http.addHeader("Content-Type", "application/json");
+    
+    // Format the authorization header correctly
+    String authHeader = String("Bearer ") + authToken;  // Add "Bearer " prefix
+    http.addHeader("Authorization", authHeader);
+    
+    int httpResponseCode = http.POST(payload);
+    
+    if (httpResponseCode == 200 || httpResponseCode == 201) {
+        Serial.println("Data sent successfully!");
+        storedReadings.count = 0;  // Clear readings after successful send
+        success = true;
+    } else {
+        Serial.println("Error on sending POST: " + String(httpResponseCode));
+        Serial.println("Response: " + http.getString());
+        
+        // Add more debug info
+        Serial.println("Authorization header: " + authHeader);
+    }
+    
+    http.end();
+    return success;
 }

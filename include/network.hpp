@@ -3,11 +3,10 @@
 
 #include <vector>
 #include "types.hpp"
+#include "globals.hpp"
 
 bool connectToWiFi();
-bool sendDataToAPI(const std::vector<StoredReading>& readings);
+bool sendDataToAPI(const StoredReading readings[], int count);
 bool sendStoredReadings();
-
-extern std::vector<StoredReading> storedReadings;
 
 #endif 

@@ -2,7 +2,8 @@
 #include "config.hpp"
 #include <Wire.h>
 
-extern Adafruit_BME680 bme;
+// Define the BME680 object
+Adafruit_BME680 bme;
 
 bool initializeBME680() {
     Wire.begin(BME_SDA, BME_SCL);
