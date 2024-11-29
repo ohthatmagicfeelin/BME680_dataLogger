@@ -89,14 +89,15 @@ void setup() {
         return;
     }
     
+    // Read and store sensor data
+    SensorData sensorData = readSensorData();
+    storeReading(sensorData);
+
     updateTimeAfterSleep();
     
     // Check night time status after updating time
     timeState.isNight = isNightTime();
     
-    // Read and store sensor data
-    SensorData sensorData = readSensorData();
-    storeReading(sensorData);
     
     // Handle data transmission during day time
     if (!timeState.isNight && storedReadings.count > 0) {
@@ -123,3 +124,4 @@ void setup() {
 void loop() {
     // Empty - using deep sleep
 }
+
