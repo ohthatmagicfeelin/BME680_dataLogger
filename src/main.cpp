@@ -81,7 +81,6 @@ void setup() {
             enterErrorState();
             return;
         }
-        // Keep WiFi connected if we need to send data
     }
     
     if (!initializeBME680()) {
@@ -91,6 +90,9 @@ void setup() {
     }
     
     updateTimeAfterSleep();
+    
+    // Check night time status after updating time
+    timeState.isNight = isNightTime();
     
     // Read and store sensor data
     SensorData sensorData = readSensorData();

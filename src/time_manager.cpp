@@ -28,15 +28,11 @@ bool isStateValid() {
 }
 
 void calculateNightCycles() {
-    // Calculate how many wake cycles will occur during night time
-    const int nightDurationSeconds = NIGHT_DURATION * 3600; // hours to seconds
-    const int sleepDurationSeconds = SLEEP_TIME / 1000000;  // microseconds to seconds
-    
+    const int nightDurationSeconds = NIGHT_DURATION * 3600;
+    const int sleepDurationSeconds = SLEEP_TIME / 1000000;
     timeState.wakeCyclesPerNight = nightDurationSeconds / sleepDurationSeconds;
     timeState.nightWakeCyclesCounter = 0;
     
-    Serial.printf("Night duration: %d hours (%d seconds)\n", NIGHT_DURATION, nightDurationSeconds);
-    Serial.printf("Sleep duration: %d seconds\n", sleepDurationSeconds);
     Serial.printf("Wake cycles per night: %d\n", timeState.wakeCyclesPerNight);
 }
 
@@ -108,36 +104,23 @@ void updateTimeAfterSleep() {
 bool isNightTime() {
     if (!getLocalTime(&timeinfo)) {
         Serial.println("Failed to obtain time");
-        return timeState.isNight; // Maintain previous state if time check fails
+        return timeState.isNight;
     }
     
     const int currentHour = timeinfo.tm_hour;
-    
-    Serial.println("\n=== Time Status ===");
-    Serial.printf("Current time: %02d:%02d:%02d\n", 
-                 timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-    Serial.printf("Night period: %02d:00 - %02d:00\n", 
-                 NIGHT_START_HOUR, NIGHT_END_HOUR);
-    
     const bool isLateNight = (currentHour >= NIGHT_START_HOUR);
     const bool isEarlyMorning = (currentHour < NIGHT_END_HOUR);
     const bool isNight = isLateNight || isEarlyMorning;
     
-    // Update night state
+    // Update night state transitions
     if (isNight && !timeState.isNight) {
-        // Transitioning into night
         timeState.isNight = true;
         timeState.nightWakeCyclesCounter = 0;
         calculateNightCycles();
     } else if (!isNight && timeState.isNight) {
-        // Transitioning out of night
         timeState.isNight = false;
         timeState.nightWakeCyclesCounter = 0;
     }
-    
-    Serial.printf("Current hour: %d\n", currentHour);
-    Serial.printf("Mode: %s\n", isNight ? "NIGHT TIME - Storing readings" : "DAY TIME - Will send readings");
-    Serial.println("==================\n");
     
     return isNight;
 }
