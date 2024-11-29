@@ -17,5 +17,6 @@ extern RTC_DATA_ATTR StoredReadingsBuffer storedReadings;
 extern RTC_DATA_ATTR bool timeInitialized;
 extern RTC_DATA_ATTR time_t lastKnownTime;
 extern RTC_DATA_ATTR int bootCount;
+extern struct tm timeinfo;  // Add this declaration
 
 #endif 

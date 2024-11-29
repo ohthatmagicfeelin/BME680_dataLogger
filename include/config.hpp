@@ -28,8 +28,8 @@ static const int BME_ADDRESS = 0x77;
 
 // Time configuration
 static const char* ntpServer = "pool.ntp.org";
-static const long gmtOffset_sec = 39600;    // AEDT: UTC+11 * 3600
-static const int daylightOffset_sec = 0;
+static const long gmtOffset_sec = 36000 + 3600;    // AEDT: UTC+11 * 3600
+static const int daylightOffset_sec = 0; 
 
 // Night time parameters
 static const int NIGHT_START_HOUR = 21;

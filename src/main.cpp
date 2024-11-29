@@ -10,9 +10,8 @@
 
 // Define global variables
 RTC_DATA_ATTR StoredReadingsBuffer storedReadings = { .count = 0 };
-RTC_DATA_ATTR bool timeInitialized = false;
-RTC_DATA_ATTR time_t lastKnownTime = 0;
 RTC_DATA_ATTR int bootCount = 0;
+struct tm timeinfo;
 
 void storeReading(const SensorData& data) {
     if (storedReadings.count >= MAX_READINGS) {
@@ -20,15 +19,12 @@ void storeReading(const SensorData& data) {
         return;
     }
 
-    time_t now;
-    time(&now);
-    
     StoredReading reading = {
         data.temperature,
         data.humidity,
         data.pressure,
         data.gas,
-        now
+        timeState.lastKnownTime
     };
     
     storedReadings.readings[storedReadings.count] = reading;
@@ -41,15 +37,12 @@ void storeReading(const SensorData& data) {
     Serial.printf("Pressure: %.2f hPa\n", data.pressure);
     Serial.printf("Gas: %.2f kOhm\n", data.gas);
     Serial.printf("Total readings stored: %d\n", storedReadings.count);
-    Serial.printf("Storage used: %d bytes\n", storedReadings.count * sizeof(StoredReading));
     Serial.println("-----------------------------------\n");
 }
 
 void goToSleep() {
-    // Update last known time before sleep
-    time(&lastKnownTime);
     Serial.println("Going to sleep for " + String(SLEEP_TIME / 1000000) + " seconds");
-    Serial.printf("Last known time before sleep: %ld\n", lastKnownTime);
+    Serial.printf("Last known time before sleep: %ld\n", timeState.lastKnownTime);
     Serial.flush();
     
     WiFi.disconnect(true);
@@ -58,77 +51,69 @@ void goToSleep() {
     esp_deep_sleep_start();
 }
 
+void enterErrorState() {
+    const int LED_PIN = 2;  // Built-in LED pin for ESP32
+    pinMode(LED_PIN, OUTPUT);
+    
+    Serial.println("Entering error state - Please reset device");
+    while(true) {
+        digitalWrite(LED_PIN, HIGH);
+        delay(500);
+        digitalWrite(LED_PIN, LOW);
+        delay(500);
+    }
+}
+
 void setup() {
     Serial.begin(115200);
     Serial.println("\n\n--- New Session Starting ---");
     delay(1000);
     
-    // Only connect to WiFi and sync time on first boot or if time is not set
-    struct tm timeinfo;
-    if (!getLocalTime(&timeinfo)) {
-        Serial.println("Time not set - attempting initial sync");
-        bool timeSync = false;
-        int retries = 0;
-        const int maxRetries = 5;
-        
-        while (!timeSync && retries < maxRetries) {
-            if (connectToWiFi()) {
-                initializeTime();
-                if (getLocalTime(&timeinfo)) {
-                    timeSync = true;
-                    Serial.printf("Time synchronized: %02d:%02d:%02d\n", 
-                                timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-                    // Disconnect WiFi after getting time
-                    WiFi.disconnect(true);
-                    WiFi.mode(WIFI_OFF);
-                }
-            }
-            if (!timeSync) {
-                retries++;
-                Serial.printf("Time sync attempt %d failed, retrying...\n", retries);
-                delay(1000);
-            }
+    bootCount++;
+    
+    // First boot or invalid state
+    if (bootCount == 1 || !isStateValid()) {
+        if (!connectToWiFi()) {
+            enterErrorState();
+            return;
         }
-        
-        if (!timeSync) {
-            Serial.println("Failed to get initial time sync. Restarting...");
-            ESP.restart();
+        if (!initializeTime()) {
+            enterErrorState();
+            return;
         }
+        // Keep WiFi connected if we need to send data
     }
     
     if (!initializeBME680()) {
         Serial.println("Failed to initialize BME680");
-        goToSleep();
+        enterErrorState();
         return;
     }
-
-    // Update time based on sleep duration
-    if (lastKnownTime > 0) {
-        lastKnownTime += (SLEEP_TIME / 1000000);
-        struct timeval tv = { .tv_sec = lastKnownTime };
-        settimeofday(&tv, NULL);
-        Serial.printf("Updated time after sleep: %ld\n", lastKnownTime);
-    }
     
-    // Read sensor data
+    updateTimeAfterSleep();
+    
+    // Read and store sensor data
     SensorData sensorData = readSensorData();
-    
-    if (getLocalTime(&timeinfo)) {
-        char timeStr[64];
-        strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", &timeinfo);
-        Serial.printf("Taking reading at: %s\n", timeStr);
-    }
-    
     storeReading(sensorData);
     
-    // Only attempt to send data during day time
-    if (!isNightTime()) {
-        if (storedReadings.count > 0 && connectToWiFi()) {
-            if (sendStoredReadings()) {
-                Serial.println("Successfully sent stored readings");
-            }
+    // Handle data transmission during day time
+    if (!timeState.isNight && storedReadings.count > 0) {
+        if (!WiFi.isConnected() && !connectToWiFi()) {
+            Serial.println("Failed to connect to WiFi for data transmission");
+            goToSleep();
+            return;
+        }
+        
+        handleTimeSync();  // WiFi is already connected
+        if (sendStoredReadings()) {  // Use existing WiFi connection
+            Serial.println("Successfully sent stored readings");
+            storedReadings.count = 0;
         }
     }
+    
+    // Only disconnect WiFi at the end
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
     
     goToSleep();
 }
