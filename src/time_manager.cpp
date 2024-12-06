@@ -88,9 +88,19 @@ bool initializeTime() {
 
 void updateTimeAfterSleep() {
     if (timeState.lastKnownTime > 0) {
+        // Add sleep duration to last known time
         timeState.lastKnownTime += (SLEEP_TIME / 1000000);
-        struct timeval tv = { .tv_sec = timeState.lastKnownTime };
+        
+        // Create a timezone-adjusted time
+        struct timeval tv;
+        tv.tv_sec = timeState.lastKnownTime;
+        tv.tv_usec = 0;
+        
+        // Set system time
         settimeofday(&tv, NULL);
+        
+        // Reinitialize timezone information
+        configTime(gmtOffset_sec, daylightOffset_sec, nullptr);
         
         if (timeState.isNight) {
             timeState.nightWakeCyclesCounter++;
@@ -106,11 +116,15 @@ bool isNightTime() {
         Serial.println("Failed to obtain time");
         return timeState.isNight;
     }
-    
+    Serial.printf("Timeinfo: %s\n", asctime(&timeinfo));
     const int currentHour = timeinfo.tm_hour;
+    Serial.printf("Current hour: %d\n", currentHour);
     const bool isLateNight = (currentHour >= NIGHT_START_HOUR);
+    Serial.printf("Is late night: %d\n", isLateNight);
     const bool isEarlyMorning = (currentHour < NIGHT_END_HOUR);
+    Serial.printf("Is early morning: %d\n", isEarlyMorning);
     const bool isNight = isLateNight || isEarlyMorning;
+    Serial.printf("Is night: %d\n", isNight);
     
     // Update night state transitions
     if (isNight && !timeState.isNight) {
