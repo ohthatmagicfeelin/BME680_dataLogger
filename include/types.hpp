@@ -17,6 +17,7 @@ struct StoredReading {
     float pressure;
     float gas;
     time_t timestamp;
+    int rssi;
 };
 
 #endif 

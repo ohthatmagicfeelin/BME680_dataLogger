@@ -8,5 +8,6 @@
 bool connectToWiFi();
 bool sendDataToAPI(const StoredReading readings[], int count);
 bool sendStoredReadings();
+void updateCurrentReadingRSSI();
 
 #endif 

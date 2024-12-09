@@ -20,12 +20,13 @@ void storeReading(const SensorData& data) {
     }
 
     StoredReading reading = {
-        data.temperature,
-        data.humidity,
-        data.pressure,
-        data.gas,
-        timeState.lastKnownTime
-    };
+        .temperature = data.temperature,
+        .humidity = data.humidity,
+        .pressure = data.pressure,
+        .gas = data.gas,
+        .timestamp = timeState.lastKnownTime,
+        .rssi = -100  // Default to poor signal, will be updated later if WiFi connects
+        };
     
     storedReadings.readings[storedReadings.count] = reading;
     storedReadings.count++;
@@ -106,6 +107,9 @@ void setup() {
             goToSleep();
             return;
         }
+        
+        // Update RSSI after successful WiFi connection
+        updateCurrentReadingRSSI();
         
         handleTimeSync();  // WiFi is already connected
         if (sendStoredReadings()) {  // Use existing WiFi connection
