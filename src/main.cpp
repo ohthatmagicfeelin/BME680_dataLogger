@@ -35,14 +35,14 @@ void setup() {
         }
     }
     
-    if (!initializeSoilSensor()) {
-        Serial.println("Failed to initialize BME680");
+    if (!SensorManager::initialize()) {
+        Serial.println("Failed to initialize sensor");
         enterErrorState();
         return;
     }
     
     // Read and store sensor data
-    SensorData sensorData = readSoilSensorData();
+    SensorData sensorData = SensorManager::read();
     storeReading(sensorData);
 
     updateTimeAfterSleep();

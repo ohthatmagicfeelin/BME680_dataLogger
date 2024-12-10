@@ -1,11 +1,33 @@
 #include "sensor.hpp"
-#include "config.hpp"
 #include <Wire.h>
 
-// Define the BME680 object
-Adafruit_BME680 bme;
+Adafruit_BME680 SensorManager::bme;
 
-bool initializeBME680() {
+bool SensorManager::initialize() {
+    switch (ACTIVE_SENSOR) {
+        case SensorType::BME680:
+            return initializeBME680();
+        case SensorType::SOIL_MOISTURE:
+            return initializeSoilMoisture();
+        default:
+            Serial.println("Unknown sensor type");
+            return false;
+    }
+}
+
+SensorData SensorManager::read() {
+    switch (ACTIVE_SENSOR) {
+        case SensorType::BME680:
+            return readBME680();
+        case SensorType::SOIL_MOISTURE:
+            return readSoilMoisture();
+        default:
+            Serial.println("Unknown sensor type");
+            return SensorData{{{nullptr, 0}}, 0};
+    }
+}
+
+bool SensorManager::initializeBME680() {
     Wire.begin(BME_SDA, BME_SCL);
     
     if (!bme.begin(BME_ADDRESS)) {
@@ -22,15 +44,19 @@ bool initializeBME680() {
     return true;
 }
 
-SensorData readBME680Data() {
-    SensorData data = {{{nullptr, 0}}, 0};  // Initialize empty structure
+bool SensorManager::initializeSoilMoisture() {
+    pinMode(SOIL_MOISTURE_PIN, INPUT);
+    return true;
+}
+
+SensorData SensorManager::readBME680() {
+    SensorData data = {{{nullptr, 0}}, 0};
     
     if (!bme.performReading()) {
         Serial.println("Failed to perform BME680 reading!");
         return data;
     }
     
-    // Add each data point with its type
     data.dataPoints[data.numDataPoints++] = {"temperature", static_cast<float>(bme.temperature)};
     data.dataPoints[data.numDataPoints++] = {"humidity", static_cast<float>(bme.humidity)};
     data.dataPoints[data.numDataPoints++] = {"pressure", static_cast<float>(bme.pressure / 100.0)};
@@ -39,34 +65,14 @@ SensorData readBME680Data() {
     return data;
 }
 
-bool initializeSoilSensor() {
-    // Mock initialization
-    return true;
-}
-
-SensorData readSoilSensorData() {
+SensorData SensorManager::readSoilMoisture() {
     SensorData data = {{{nullptr, 0}}, 0};
     
-    // Mock soil moisture reading (random value between 0-100)
-    data.dataPoints[data.numDataPoints++] = {"soil_moisture", static_cast<float>(random(0, 100))};
+    // Read analog value and convert to percentage
+    int rawValue = analogRead(SOIL_MOISTURE_PIN);
+    float moisturePercentage = map(rawValue, 4095, 0, 0, 100);  // Adjust min/max values as needed
+    
+    data.dataPoints[data.numDataPoints++] = {"soil_moisture", moisturePercentage};
     
     return data;
-}
-
-SensorData readAllSensors() {
-    SensorData combinedData = {{{nullptr, 0}}, 0};
-    
-    // Read BME680
-    SensorData bmeData = readBME680Data();
-    for (int i = 0; i < bmeData.numDataPoints; i++) {
-        combinedData.dataPoints[combinedData.numDataPoints++] = bmeData.dataPoints[i];
-    }
-    
-    // Read soil sensor
-    SensorData soilData = readSoilSensorData();
-    for (int i = 0; i < soilData.numDataPoints; i++) {
-        combinedData.dataPoints[combinedData.numDataPoints++] = soilData.dataPoints[i];
-    }
-    
-    return combinedData;
 } 

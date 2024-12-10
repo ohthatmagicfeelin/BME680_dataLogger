@@ -3,6 +3,16 @@
 
 #include <Arduino.h>
 
+// Sensor configuration
+enum class SensorType {
+    BME680,
+    SOIL_MOISTURE,
+    // Add more sensor types here as needed
+};
+
+// Active sensor configuration
+static const SensorType ACTIVE_SENSOR = SensorType::SOIL_MOISTURE;  // Change this to select sensor
+
 // Base time unit
 static const uint64_t ONE_SECOND = 1000000;
 
@@ -15,6 +25,9 @@ static const int RETRY_DELAY = 5000;
 static const int BME_SCL = 22;
 static const int BME_SDA = 21;
 static const int BME_ADDRESS = 0x77;
+
+// Soil Moisture configuration
+static const int SOIL_MOISTURE_PIN = 36;  // Example analog pin
 
 // Time configuration
 static const char* ntpServer = "pool.ntp.org";
