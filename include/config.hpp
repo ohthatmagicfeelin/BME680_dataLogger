@@ -7,17 +7,24 @@
 enum class SensorType {
     BME680,
     SOIL_MOISTURE,
-    // Add more sensor types here as needed
+    NONE  // Used for empty slots
 };
 
+// Maximum number of active sensors
+static const int MAX_ACTIVE_SENSORS = 3;
+
 // Active sensor configuration
-static const SensorType ACTIVE_SENSOR = SensorType::SOIL_MOISTURE;  // Change this to select sensor
+static const SensorType ACTIVE_SENSORS[MAX_ACTIVE_SENSORS] = {
+    SensorType::SOIL_MOISTURE,
+    SensorType::BME680,
+    SensorType::NONE
+};
 
 // Base time unit
 static const uint64_t ONE_SECOND = 1000000;
 
 // Sleep configuration
-static const uint64_t SLEEP_TIME = 10 * ONE_SECOND; // 10 minutes
+static const uint64_t SLEEP_TIME = 5 * 60 * ONE_SECOND; // 5 minutes
 static const int MAX_RETRIES = 3;
 static const int RETRY_DELAY = 5000;
 

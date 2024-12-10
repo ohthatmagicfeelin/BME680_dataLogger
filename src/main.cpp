@@ -42,7 +42,7 @@ void setup() {
     }
     
     // Read and store sensor data
-    SensorData sensorData = SensorManager::read();
+    SensorData sensorData = SensorManager::readAll();
     storeReading(sensorData);
 
     updateTimeAfterSleep();

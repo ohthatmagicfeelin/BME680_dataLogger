@@ -2,28 +2,68 @@
 #include <Wire.h>
 
 Adafruit_BME680 SensorManager::bme;
+bool SensorManager::sensorInitialized[MAX_ACTIVE_SENSORS] = {false};
 
 bool SensorManager::initialize() {
-    switch (ACTIVE_SENSOR) {
-        case SensorType::BME680:
-            return initializeBME680();
-        case SensorType::SOIL_MOISTURE:
-            return initializeSoilMoisture();
-        default:
-            Serial.println("Unknown sensor type");
-            return false;
+    bool allSuccess = true;
+    
+    for (int i = 0; i < MAX_ACTIVE_SENSORS; i++) {
+        if (ACTIVE_SENSORS[i] == SensorType::NONE) continue;
+        
+        bool success = false;
+        switch (ACTIVE_SENSORS[i]) {
+            case SensorType::BME680:
+                success = initializeBME680();
+                break;
+            case SensorType::SOIL_MOISTURE:
+                success = initializeSoilMoisture();
+                break;
+            default:
+                continue;
+        }
+        
+        sensorInitialized[i] = success;
+        allSuccess &= success;
+        
+        if (!success) {
+            Serial.printf("Failed to initialize sensor %d\n", i);
+        }
     }
+    
+    return allSuccess;
 }
 
-SensorData SensorManager::read() {
-    switch (ACTIVE_SENSOR) {
-        case SensorType::BME680:
-            return readBME680();
-        case SensorType::SOIL_MOISTURE:
-            return readSoilMoisture();
-        default:
-            Serial.println("Unknown sensor type");
-            return SensorData{{{nullptr, 0}}, 0};
+SensorData SensorManager::readAll() {
+    SensorData combinedData = {{{nullptr, 0}}, 0};
+    
+    for (int i = 0; i < MAX_ACTIVE_SENSORS; i++) {
+        if (!sensorInitialized[i]) continue;
+        
+        SensorData currentData;
+        switch (ACTIVE_SENSORS[i]) {
+            case SensorType::BME680:
+                currentData = readBME680();
+                break;
+            case SensorType::SOIL_MOISTURE:
+                currentData = readSoilMoisture();
+                break;
+            default:
+                continue;
+        }
+        
+        combineSensorData(combinedData, currentData);
+    }
+    
+    return combinedData;
+}
+
+void SensorManager::combineSensorData(SensorData& target, const SensorData& source) {
+    for (int i = 0; i < source.numDataPoints; i++) {
+        if (target.numDataPoints >= MAX_DATA_POINTS_PER_READING) {
+            Serial.println("Warning: Maximum data points reached, some readings ignored");
+            break;
+        }
+        target.dataPoints[target.numDataPoints++] = source.dataPoints[i];
     }
 }
 
