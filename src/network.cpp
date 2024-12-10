@@ -51,35 +51,16 @@ bool sendStoredReadings() {
         char timeStr[30];
         strftime(timeStr, sizeof(timeStr), "%Y-%m-%dT%H:%M:%S.000Z", &timeinfo);
         
-        // Temperature
-        JsonObject tempReading = array.add<JsonObject>();
-        tempReading["type"] = "temperature";
-        tempReading["value"] = reading.temperature;
-        tempReading["deviceId"] = deviceId;
-        tempReading["timestamp"] = timeStr;
+        // Add each data point as a separate reading
+        for (int j = 0; j < reading.numDataPoints; j++) {
+            JsonObject dataPoint = array.add<JsonObject>();
+            dataPoint["type"] = reading.dataPoints[j].type;
+            dataPoint["value"] = reading.dataPoints[j].value;
+            dataPoint["deviceId"] = deviceId;
+            dataPoint["timestamp"] = timeStr;
+        }
         
-        // Humidity
-        JsonObject humReading = array.add<JsonObject>();
-        humReading["type"] = "humidity";
-        humReading["value"] = reading.humidity;
-        humReading["deviceId"] = deviceId;
-        humReading["timestamp"] = timeStr;
-        
-        // Pressure
-        JsonObject pressReading = array.add<JsonObject>();
-        pressReading["type"] = "pressure";
-        pressReading["value"] = reading.pressure;
-        pressReading["deviceId"] = deviceId;
-        pressReading["timestamp"] = timeStr;
-        
-        // Air Quality
-        JsonObject gasReading = array.add<JsonObject>();
-        gasReading["type"] = "air_quality";
-        gasReading["value"] = reading.gas;
-        gasReading["deviceId"] = deviceId;
-        gasReading["timestamp"] = timeStr;
-        
-        // WiFi Signal Strength
+        // Add RSSI reading
         JsonObject rssiReading = array.add<JsonObject>();
         rssiReading["type"] = "wifi_rssi";
         rssiReading["value"] = reading.rssi;

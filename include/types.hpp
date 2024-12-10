@@ -4,20 +4,27 @@
 #include <time.h>
 #include "esp_sleep.h"
 
-struct SensorData {
-    float temperature;
-    float humidity;
-    float pressure;
-    float gas;
+// Single data point with type and value
+struct DataPoint {
+    const char* type;  // Name/type of the reading (e.g., "temperature", "humidity", "soil_moisture")
+    float value;
 };
 
+// Maximum number of different readings a sensor can have
+const int MAX_DATA_POINTS_PER_READING = 10;
+
+// A complete reading with multiple data points and metadata
 struct StoredReading {
-    float temperature;
-    float humidity;
-    float pressure;
-    float gas;
+    DataPoint dataPoints[MAX_DATA_POINTS_PER_READING];
+    int numDataPoints;
     time_t timestamp;
     int rssi;
+};
+
+// Base sensor data structure
+struct SensorData {
+    DataPoint dataPoints[MAX_DATA_POINTS_PER_READING];
+    int numDataPoints;
 };
 
 #endif 

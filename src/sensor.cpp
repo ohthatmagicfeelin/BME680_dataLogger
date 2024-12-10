@@ -22,18 +22,51 @@ bool initializeBME680() {
     return true;
 }
 
-SensorData readSensorData() {
-    SensorData data = {0, 0, 0, 0};
+SensorData readBME680Data() {
+    SensorData data = {{{nullptr, 0}}, 0};  // Initialize empty structure
     
     if (!bme.performReading()) {
-        Serial.println("Failed to perform reading!");
+        Serial.println("Failed to perform BME680 reading!");
         return data;
     }
     
-    data.temperature = bme.temperature;
-    data.humidity = bme.humidity;
-    data.pressure = bme.pressure / 100.0;
-    data.gas = bme.gas_resistance / 1000.0;
+    // Add each data point with its type
+    data.dataPoints[data.numDataPoints++] = {"temperature", static_cast<float>(bme.temperature)};
+    data.dataPoints[data.numDataPoints++] = {"humidity", static_cast<float>(bme.humidity)};
+    data.dataPoints[data.numDataPoints++] = {"pressure", static_cast<float>(bme.pressure / 100.0)};
+    data.dataPoints[data.numDataPoints++] = {"gas", static_cast<float>(bme.gas_resistance / 1000.0)};
     
     return data;
+}
+
+bool initializeSoilSensor() {
+    // Mock initialization
+    return true;
+}
+
+SensorData readSoilSensorData() {
+    SensorData data = {{{nullptr, 0}}, 0};
+    
+    // Mock soil moisture reading (random value between 0-100)
+    data.dataPoints[data.numDataPoints++] = {"soil_moisture", static_cast<float>(random(0, 100))};
+    
+    return data;
+}
+
+SensorData readAllSensors() {
+    SensorData combinedData = {{{nullptr, 0}}, 0};
+    
+    // Read BME680
+    SensorData bmeData = readBME680Data();
+    for (int i = 0; i < bmeData.numDataPoints; i++) {
+        combinedData.dataPoints[combinedData.numDataPoints++] = bmeData.dataPoints[i];
+    }
+    
+    // Read soil sensor
+    SensorData soilData = readSoilSensorData();
+    for (int i = 0; i < soilData.numDataPoints; i++) {
+        combinedData.dataPoints[combinedData.numDataPoints++] = soilData.dataPoints[i];
+    }
+    
+    return combinedData;
 } 

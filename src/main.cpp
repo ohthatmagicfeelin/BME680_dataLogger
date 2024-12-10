@@ -19,24 +19,25 @@ void storeReading(const SensorData& data) {
         return;
     }
 
-    StoredReading reading = {
-        .temperature = data.temperature,
-        .humidity = data.humidity,
-        .pressure = data.pressure,
-        .gas = data.gas,
-        .timestamp = timeState.lastKnownTime,
-        .rssi = -100  // Default to poor signal, will be updated later if WiFi connects
-        };
+    StoredReading& reading = storedReadings.readings[storedReadings.count];
+    reading.timestamp = timeState.lastKnownTime;
+    reading.rssi = -100;  // Default to poor signal
+    reading.numDataPoints = 0;
     
-    storedReadings.readings[storedReadings.count] = reading;
+    // Copy all data points
+    for (int i = 0; i < data.numDataPoints; i++) {
+        reading.dataPoints[i] = data.dataPoints[i];
+        reading.numDataPoints++;
+    }
+    
     storedReadings.count++;
     
+    // Debug output
     Serial.println("\nStored reading #" + String(storedReadings.count));
     Serial.println("-----------------------------------");
-    Serial.printf("Temperature: %.2f°C\n", data.temperature);
-    Serial.printf("Humidity: %.2f%%\n", data.humidity);
-    Serial.printf("Pressure: %.2f hPa\n", data.pressure);
-    Serial.printf("Gas: %.2f kOhm\n", data.gas);
+    for (int i = 0; i < reading.numDataPoints; i++) {
+        Serial.printf("%s: %.2f\n", reading.dataPoints[i].type, reading.dataPoints[i].value);
+    }
     Serial.printf("Total readings stored: %d\n", storedReadings.count);
     Serial.println("-----------------------------------\n");
 }
@@ -91,7 +92,7 @@ void setup() {
     }
     
     // Read and store sensor data
-    SensorData sensorData = readSensorData();
+    SensorData sensorData = readBME680Data();
     storeReading(sensorData);
 
     updateTimeAfterSleep();
