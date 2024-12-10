@@ -46,6 +46,7 @@ bool SensorManager::initializeBME680() {
 
 bool SensorManager::initializeSoilMoisture() {
     pinMode(SOIL_MOISTURE_PIN, INPUT);
+    pinMode(SOIL_MOISTURE_POWER_PIN, OUTPUT);
     return true;
 }
 
@@ -68,11 +69,28 @@ SensorData SensorManager::readBME680() {
 SensorData SensorManager::readSoilMoisture() {
     SensorData data = {{{nullptr, 0}}, 0};
     
-    // Read analog value and convert to percentage
-    int rawValue = analogRead(SOIL_MOISTURE_PIN);
-    float moisturePercentage = map(rawValue, 4095, 0, 0, 100);  // Adjust min/max values as needed
+    digitalWrite(SOIL_MOISTURE_POWER_PIN, HIGH);
+    delay(10);
     
-    data.dataPoints[data.numDataPoints++] = {"soil_moisture", moisturePercentage};
+    const int numReadings = 5;
+    int totalReading = 0;
+    
+    for(int i = 0; i < numReadings; i++) {
+        totalReading += analogRead(SOIL_MOISTURE_PIN);
+        delay(20);
+    }
+    
+    int rawValue = totalReading / numReadings;
+    
+    digitalWrite(SOIL_MOISTURE_POWER_PIN, LOW);
+    
+    int moistureValue = constrain(rawValue, SOIL_MOISTURE_WATER_VALUE, SOIL_MOISTURE_AIR_VALUE);
+    float moisturePercent = map(moistureValue, SOIL_MOISTURE_AIR_VALUE, SOIL_MOISTURE_WATER_VALUE, 0, 100);
+    
+    data.dataPoints[data.numDataPoints++] = {"soil_moisture_raw", static_cast<float>(rawValue)};
+    data.dataPoints[data.numDataPoints++] = {"soil_moisture_percent", moisturePercent};
+    
+    Serial.printf("Soil Moisture - Raw: %d, Percent: %.2f%%\n", rawValue, moisturePercent);
     
     return data;
 } 

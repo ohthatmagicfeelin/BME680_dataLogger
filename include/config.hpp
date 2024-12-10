@@ -27,7 +27,10 @@ static const int BME_SDA = 21;
 static const int BME_ADDRESS = 0x77;
 
 // Soil Moisture configuration
-static const int SOIL_MOISTURE_PIN = 36;  // Example analog pin
+static const int SOIL_MOISTURE_PIN = 32;  
+static const int SOIL_MOISTURE_POWER_PIN = 27;
+static const int SOIL_MOISTURE_AIR_VALUE = 3000;    // Reading in air
+static const int SOIL_MOISTURE_WATER_VALUE = 1000;   // Reading in water
 
 // Time configuration
 static const char* ntpServer = "pool.ntp.org";
