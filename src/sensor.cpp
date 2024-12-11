@@ -113,24 +113,25 @@ SensorData SensorManager::readSoilMoisture() {
     delay(10);
     
     const int numReadings = 5;
-    int totalReading = 0;
+    float totalReading = 0.0;
     
     for(int i = 0; i < numReadings; i++) {
         totalReading += analogRead(SOIL_MOISTURE_PIN);
         delay(20);
     }
     
-    int rawValue = totalReading / numReadings;
+    float rawValue = totalReading / numReadings;
     
     digitalWrite(SOIL_MOISTURE_POWER_PIN, LOW);
     
-    int moistureValue = constrain(rawValue, SOIL_MOISTURE_WATER_VALUE, SOIL_MOISTURE_AIR_VALUE);
-    float moisturePercent = map(moistureValue, SOIL_MOISTURE_AIR_VALUE, SOIL_MOISTURE_WATER_VALUE, 0, 100);
+    float moistureValue = constrain(rawValue, SOIL_MOISTURE_WATER_VALUE, SOIL_MOISTURE_AIR_VALUE);
+    float moisturePercent = 100.0f * (moistureValue - SOIL_MOISTURE_AIR_VALUE) / 
+                           (SOIL_MOISTURE_WATER_VALUE - SOIL_MOISTURE_AIR_VALUE);
     
-    data.dataPoints[data.numDataPoints++] = {"soil_moisture_raw", static_cast<float>(rawValue)};
+    data.dataPoints[data.numDataPoints++] = {"soil_moisture_raw", rawValue};
     data.dataPoints[data.numDataPoints++] = {"soil_moisture_percent", moisturePercent};
     
-    Serial.printf("Soil Moisture - Raw: %d, Percent: %.2f%%\n", rawValue, moisturePercent);
+    Serial.printf("Soil Moisture - Raw: %.2f, Percent: %.2f%%\n", rawValue, moisturePercent);
     
     return data;
 } 
