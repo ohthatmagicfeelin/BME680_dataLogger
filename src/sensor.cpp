@@ -200,7 +200,7 @@ SensorData SensorManager::readDeviceMetrics() {
     // Add metrics to data points
     data.dataPoints[data.numDataPoints++] = {"battery_voltage", batteryVoltage};
     data.dataPoints[data.numDataPoints++] = {"battery_percent", batteryPercent};
-    data.dataPoints[data.numDataPoints++] = {"battery_type", (float)static_cast<int>(BATTERY_TYPE)};
+    data.dataPoints[data.numDataPoints++] = {"battery_type", (float)static_cast<int>(BATTERY_TYPE) + 1.0};
     
     Serial.printf("Device Metrics - Battery: %.2fV (%.1f%%) Type: %d\n", 
                  batteryVoltage, batteryPercent, static_cast<int>(BATTERY_TYPE));
