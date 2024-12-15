@@ -4,6 +4,17 @@
 Adafruit_BME680 SensorManager::bme;
 bool SensorManager::sensorInitialized[MAX_ACTIVE_SENSORS] = {false};
 
+const char* getBatteryTypeString(BatteryType type) {
+    switch(type) {
+        case BatteryType::LIPO:
+            return "lipo";
+        case BatteryType::AA_BATTERIES:
+            return "aa_batteries";
+        default:
+            return "unknown";
+    }
+}
+
 bool SensorManager::initialize() {
     bool allSuccess = true;
     
@@ -17,6 +28,9 @@ bool SensorManager::initialize() {
                 break;
             case SensorType::SOIL_MOISTURE:
                 success = initializeSoilMoisture();
+                break;
+            case SensorType::DEVICE_METRICS:
+                success = initializeDeviceMetrics();
                 break;
             default:
                 continue;
@@ -46,6 +60,9 @@ SensorData SensorManager::readAll() {
                 break;
             case SensorType::SOIL_MOISTURE:
                 currentData = readSoilMoisture();
+                break;
+            case SensorType::DEVICE_METRICS:
+                currentData = readDeviceMetrics();
                 break;
             default:
                 continue;
@@ -87,6 +104,12 @@ bool SensorManager::initializeBME680() {
 bool SensorManager::initializeSoilMoisture() {
     pinMode(SOIL_MOISTURE_PIN, INPUT);
     pinMode(SOIL_MOISTURE_POWER_PIN, OUTPUT);
+    return true;
+}
+
+bool SensorManager::initializeDeviceMetrics() {
+    pinMode(BATTERY_VOLTAGE_PIN, INPUT);
+    analogReadResolution(12);  // Set ADC resolution to 12 bits
     return true;
 }
 
@@ -132,6 +155,55 @@ SensorData SensorManager::readSoilMoisture() {
     data.dataPoints[data.numDataPoints++] = {"soil_moisture_percent", moisturePercent};
     
     Serial.printf("Soil Moisture - Raw: %.2f, Percent: %.2f%%\n", rawValue, moisturePercent);
+    
+    return data;
+}
+
+SensorData SensorManager::readDeviceMetrics() {
+    SensorData data = {{{nullptr, 0}}, 0};
+    
+    // Read battery voltage
+    const int numReadings = 10;
+    float totalReading = 0.0;
+    
+    for(int i = 0; i < numReadings; i++) {
+        totalReading += analogRead(BATTERY_VOLTAGE_PIN);
+        delay(10);
+    }
+    
+    float averageReading = totalReading / numReadings;
+    
+    // Convert ADC reading to voltage
+    float voltageRaw = (averageReading / ADC_RESOLUTION) * ADC_REFERENCE_VOLTAGE;
+    float batteryVoltage = voltageRaw * BATTERY_VOLTAGE_DIVIDER_RATIO;
+    
+    // Get voltage range based on battery type
+    float minVoltage, maxVoltage;
+    switch(BATTERY_TYPE) {
+        case BatteryType::LIPO:
+            minVoltage = LIPO_MIN_VOLTAGE;
+            maxVoltage = LIPO_MAX_VOLTAGE;
+            break;
+        case BatteryType::AA_BATTERIES:
+            minVoltage = AA_MIN_VOLTAGE;
+            maxVoltage = AA_MAX_VOLTAGE;
+            break;
+    }
+    
+    // Calculate battery percentage based on configured battery type
+    float batteryPercent = constrain(
+        ((batteryVoltage - minVoltage) / (maxVoltage - minVoltage)) * 100.0,
+        0.0,
+        100.0
+    );
+    
+    // Add metrics to data points
+    data.dataPoints[data.numDataPoints++] = {"battery_voltage", batteryVoltage};
+    data.dataPoints[data.numDataPoints++] = {"battery_percent", batteryPercent};
+    data.dataPoints[data.numDataPoints++] = {"battery_type", (float)static_cast<int>(BATTERY_TYPE)};
+    
+    Serial.printf("Device Metrics - Battery: %.2fV (%.1f%%) Type: %d\n", 
+                 batteryVoltage, batteryPercent, static_cast<int>(BATTERY_TYPE));
     
     return data;
 } 

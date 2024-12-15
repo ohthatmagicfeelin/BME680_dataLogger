@@ -7,6 +7,7 @@
 enum class SensorType {
     BME680,
     SOIL_MOISTURE,
+    DEVICE_METRICS,
     NONE  // Used for empty slots
 };
 
@@ -15,8 +16,10 @@ static const int MAX_ACTIVE_SENSORS = 3;
 
 // Active sensor configuration
 static const SensorType ACTIVE_SENSORS[MAX_ACTIVE_SENSORS] = {
-    SensorType::SOIL_MOISTURE,
-    SensorType::BME680,
+    // SensorType::SOIL_MOISTURE,
+    // SensorType::BME680,
+    SensorType::DEVICE_METRICS,
+    SensorType::NONE,
     SensorType::NONE
 };
 
@@ -24,7 +27,7 @@ static const SensorType ACTIVE_SENSORS[MAX_ACTIVE_SENSORS] = {
 static const uint64_t ONE_SECOND = 1000000;
 
 // Sleep configuration
-static const uint64_t SLEEP_TIME = 15 * 60 * ONE_SECOND; // 15 minutes
+static const uint64_t SLEEP_TIME = 10 * ONE_SECOND; // 10 seconds
 static const int MAX_RETRIES = 3;
 static const int RETRY_DELAY = 5000;
 
@@ -47,5 +50,29 @@ static const int daylightOffset_sec = 0;
 // Night time parameters
 static const int NIGHT_START_HOUR = 21;
 static const int NIGHT_END_HOUR = 6;
+
+// Add device metrics configuration
+static const int BATTERY_VOLTAGE_PIN = 35;  // ADC1_CHANNEL_7
+static const float BATTERY_VOLTAGE_DIVIDER_RATIO = 2.0;  // Depends on your voltage divider
+static const float ADC_REFERENCE_VOLTAGE = 3.3;  // ESP32 reference voltage
+static const int ADC_RESOLUTION = 4095;  // 12-bit ADC
+
+// Battery type configuration
+enum class BatteryType {
+    LIPO,
+    AA_BATTERIES
+};
+
+// Configure which battery type is being used
+static const BatteryType BATTERY_TYPE = BatteryType::AA_BATTERIES;
+
+// Battery voltage ranges
+// LiPo: 3.3V (empty) to 4.2V (full)
+static const float LIPO_MIN_VOLTAGE = 3.3;
+static const float LIPO_MAX_VOLTAGE = 4.2;
+
+// 3x AA: 3.0V (empty) to 4.5V (full)
+static const float AA_MIN_VOLTAGE = 3.0;
+static const float AA_MAX_VOLTAGE = 4.5;
 
 #endif
