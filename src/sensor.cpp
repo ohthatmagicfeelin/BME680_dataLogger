@@ -1,6 +1,7 @@
 #include "sensor.hpp"
 #include <Wire.h>
 #include <WiFi.h>
+#include "globals.hpp"
 
 Adafruit_BME680 SensorManager::bme;
 bool SensorManager::sensorInitialized[MAX_ACTIVE_SENSORS] = {false};
@@ -225,7 +226,11 @@ SensorData SensorManager::readNetworkMetrics() {
     int rssi = WiFi.isConnected() ? WiFi.RSSI() : -100;
     data.dataPoints[data.numDataPoints++] = {"wifi_rssi", static_cast<float>(rssi)};
     
-    Serial.printf("Network Metrics - RSSI: %d dBm\n", rssi);
+    // Add stored readings count as a metric
+    data.dataPoints[data.numDataPoints++] = {"stored_readings_count", static_cast<float>(storedReadings.count+1)};
+    
+    Serial.printf("Network Metrics - RSSI: %d dBm, Stored Readings: %d\n", 
+                 rssi, storedReadings.count);
     
     return data;
 } 
