@@ -80,13 +80,6 @@ String createJsonPayload() {
             dataPoint["deviceId"] = deviceId;
             dataPoint["timestamp"] = timeStr;
         }
-        
-        // Add RSSI reading
-        JsonObject rssiReading = array.add<JsonObject>();
-        rssiReading["type"] = "wifi_rssi";
-        rssiReading["value"] = reading.rssi;
-        rssiReading["deviceId"] = deviceId;
-        rssiReading["timestamp"] = timeStr;
     }
 
     String payload;
@@ -127,10 +120,3 @@ bool sendStoredReadings() {
 
 
 
-void updateCurrentReadingRSSI() {
-    if (storedReadings.count > 0) {
-        int currentRssi = WiFi.isConnected() ? WiFi.RSSI() : -100;
-        Serial.printf("Current WiFi RSSI: %d dBm\n", currentRssi);
-        storedReadings.readings[storedReadings.count - 1].rssi = currentRssi;
-    }
-}

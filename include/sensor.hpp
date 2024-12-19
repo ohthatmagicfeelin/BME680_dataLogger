@@ -13,11 +13,13 @@ public:
 private:
     static bool initializeBME680();
     static bool initializeSoilMoisture();
+    static bool initializeBatteryMetrics();
+    static bool initializeNetworkMetrics();
     static SensorData readBME680();
     static SensorData readSoilMoisture();
-    static void combineSensorData(SensorData& target, const SensorData& source);
-    static bool initializeBatteryMetrics();
     static SensorData readBatteryMetrics();
+    static SensorData readNetworkMetrics();
+    static void combineSensorData(SensorData& target, const SensorData& source);
     
     static Adafruit_BME680 bme;
     static bool sensorInitialized[MAX_ACTIVE_SENSORS];

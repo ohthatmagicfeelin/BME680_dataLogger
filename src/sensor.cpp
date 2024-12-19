@@ -1,5 +1,6 @@
 #include "sensor.hpp"
 #include <Wire.h>
+#include <WiFi.h>
 
 Adafruit_BME680 SensorManager::bme;
 bool SensorManager::sensorInitialized[MAX_ACTIVE_SENSORS] = {false};
@@ -32,6 +33,9 @@ bool SensorManager::initialize() {
             case SensorType::BATTERY_METRICS:
                 success = initializeBatteryMetrics();
                 break;
+            case SensorType::NETWORK_METRICS:
+                success = initializeNetworkMetrics();
+                break;
             default:
                 continue;
         }
@@ -63,6 +67,9 @@ SensorData SensorManager::readAll() {
                 break;
             case SensorType::BATTERY_METRICS:
                 currentData = readBatteryMetrics();
+                break;
+            case SensorType::NETWORK_METRICS:
+                currentData = readNetworkMetrics();
                 break;
             default:
                 continue;
@@ -111,6 +118,10 @@ bool SensorManager::initializeBatteryMetrics() {
     pinMode(BATTERY_VOLTAGE_PIN, INPUT);
     analogReadResolution(12);  // Set ADC resolution to 12 bits
     return true;
+}
+
+bool SensorManager::initializeNetworkMetrics() {
+    return true;  // No initialization needed
 }
 
 SensorData SensorManager::readBME680() {
@@ -204,6 +215,17 @@ SensorData SensorManager::readBatteryMetrics() {
     
     Serial.printf("Device Metrics - Battery: %.2fV (%.1f%%) Type: %d\n", 
                  batteryVoltage, batteryPercent, static_cast<int>(BATTERY_TYPE));
+    
+    return data;
+}
+
+SensorData SensorManager::readNetworkMetrics() {
+    SensorData data = {{{nullptr, 0}}, 0};
+    
+    int rssi = WiFi.isConnected() ? WiFi.RSSI() : -100;
+    data.dataPoints[data.numDataPoints++] = {"wifi_rssi", static_cast<float>(rssi)};
+    
+    Serial.printf("Network Metrics - RSSI: %d dBm\n", rssi);
     
     return data;
 } 

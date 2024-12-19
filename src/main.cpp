@@ -23,7 +23,7 @@ void setup() {
     
     bootCount++;
     
-    // First boot or invalid state
+    // First boot or invalid state - always connect
     if (bootCount == 1 || !isStateValid()) {
         if (!connectToWiFi()) {
             enterErrorState();
@@ -35,43 +35,45 @@ void setup() {
         }
     }
     
+    updateTimeAfterSleep();
+    timeState.isNight = isNightTime();
+    
+    // Connect to WiFi if:
+    // 1. It's not night time and we have readings to send, or
+    // 2. We have a full buffer that needs to be sent regardless of time
+    bool shouldConnect = (!timeState.isNight && storedReadings.count > 0) || 
+                        (storedReadings.count >= MAX_READINGS);
+    
+    if (shouldConnect) {
+        if (!WiFi.isConnected() && !connectToWiFi()) {
+            Serial.println("Failed to connect to WiFi for data transmission");
+            // Continue execution - we'll still take measurements
+        } else {
+            handleTimeSync();  // Sync time while we have WiFi
+        }
+    }
+    
+    // Initialize and read sensors
     if (!SensorManager::initialize()) {
-        Serial.println("Failed to initialize sensor");
+        Serial.println("Failed to initialize sensors");
         enterErrorState();
         return;
     }
     
-    // Read and store sensor data
     SensorData sensorData = SensorManager::readAll();
     storeReading(sensorData);
-
-    updateTimeAfterSleep();
     
-    // Check night time status after updating time
-    timeState.isNight = isNightTime();
-    
-    // Handle data transmission during day time
-    if (!timeState.isNight && storedReadings.count > 0) {
-        if (!WiFi.isConnected() && !connectToWiFi()) {
-            Serial.println("Failed to connect to WiFi for data transmission");
-            goToSleep();
-            return;
-        }
-        
-        // Update RSSI after successful WiFi connection
-        updateCurrentReadingRSSI();
-        
-        handleTimeSync();  // WiFi is already connected
-        if (sendStoredReadings()) {  // Use existing WiFi connection
+    // If we're connected, try to send the data
+    if (WiFi.isConnected() && storedReadings.count > 0) {
+        if (sendStoredReadings()) {
             Serial.println("Successfully sent stored readings");
             storedReadings.count = 0;
         }
     }
     
-    // Only disconnect WiFi at the end
+    // Cleanup and sleep
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
-    
     goToSleep();
 }
 
