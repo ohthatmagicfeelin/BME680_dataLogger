@@ -16,8 +16,8 @@ private:
     static SensorData readBME680();
     static SensorData readSoilMoisture();
     static void combineSensorData(SensorData& target, const SensorData& source);
-    static bool initializeDeviceMetrics();
-    static SensorData readDeviceMetrics();
+    static bool initializeBatteryMetrics();
+    static SensorData readBatteryMetrics();
     
     static Adafruit_BME680 bme;
     static bool sensorInitialized[MAX_ACTIVE_SENSORS];

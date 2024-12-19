@@ -7,7 +7,7 @@
 enum class SensorType {
     BME680,
     SOIL_MOISTURE,
-    DEVICE_METRICS,
+    BATTERY_METRICS,
     NONE  // Used for empty slots
 };
 
@@ -18,7 +18,7 @@ static const int MAX_ACTIVE_SENSORS = 3;
 static const SensorType ACTIVE_SENSORS[MAX_ACTIVE_SENSORS] = {
     SensorType::SOIL_MOISTURE,
     // SensorType::BME680,
-    // SensorType::DEVICE_METRICS,
+    // SensorType::BATTERY_METRICS,
     SensorType::NONE,
     SensorType::NONE
 };

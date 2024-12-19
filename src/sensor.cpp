@@ -29,8 +29,8 @@ bool SensorManager::initialize() {
             case SensorType::SOIL_MOISTURE:
                 success = initializeSoilMoisture();
                 break;
-            case SensorType::DEVICE_METRICS:
-                success = initializeDeviceMetrics();
+            case SensorType::BATTERY_METRICS:
+                success = initializeBatteryMetrics();
                 break;
             default:
                 continue;
@@ -61,8 +61,8 @@ SensorData SensorManager::readAll() {
             case SensorType::SOIL_MOISTURE:
                 currentData = readSoilMoisture();
                 break;
-            case SensorType::DEVICE_METRICS:
-                currentData = readDeviceMetrics();
+            case SensorType::BATTERY_METRICS:
+                currentData = readBatteryMetrics();
                 break;
             default:
                 continue;
@@ -107,7 +107,7 @@ bool SensorManager::initializeSoilMoisture() {
     return true;
 }
 
-bool SensorManager::initializeDeviceMetrics() {
+bool SensorManager::initializeBatteryMetrics() {
     pinMode(BATTERY_VOLTAGE_PIN, INPUT);
     analogReadResolution(12);  // Set ADC resolution to 12 bits
     return true;
@@ -159,7 +159,7 @@ SensorData SensorManager::readSoilMoisture() {
     return data;
 }
 
-SensorData SensorManager::readDeviceMetrics() {
+SensorData SensorManager::readBatteryMetrics() {
     SensorData data = {{{nullptr, 0}}, 0};
     
     // Read battery voltage
