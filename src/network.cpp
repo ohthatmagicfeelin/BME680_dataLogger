@@ -54,10 +54,15 @@ bool sendHttpRequest(const String& payload) {
     return success;
 }
 
-
-
-
-
+const char* getSensorString(uint8_t sensorId) {
+    switch(static_cast<SensorId>(sensorId)) {
+        case SensorId::BME680: return "bme680";
+        case SensorId::SOIL_MOISTURE: return "soil_moisture";
+        case SensorId::BATTERY: return "battery";
+        case SensorId::NETWORK: return "network";
+        default: return "unknown";
+    }
+}
 
 String createJsonPayload() {
     JsonDocument doc;
@@ -66,17 +71,16 @@ String createJsonPayload() {
     for (int i = 0; i < storedReadings.count; i++) {
         const StoredReading& reading = storedReadings.readings[i];
         
-        // Convert to local time for timestamp
         struct tm timeinfo;
         localtime_r(&reading.timestamp, &timeinfo);
         char timeStr[30];
         strftime(timeStr, sizeof(timeStr), "%Y-%m-%dT%H:%M:%S.000Z", &timeinfo);
         
-        // Add each data point as a separate reading
         for (int j = 0; j < reading.numDataPoints; j++) {
             JsonObject dataPoint = array.add<JsonObject>();
             dataPoint["type"] = reading.dataPoints[j].type;
             dataPoint["value"] = reading.dataPoints[j].value;
+            dataPoint["sensor"] = getSensorString(reading.dataPoints[j].sensorId);
             dataPoint["deviceId"] = deviceId;
             dataPoint["timestamp"] = timeStr;
         }
@@ -84,7 +88,7 @@ String createJsonPayload() {
 
     String payload;
     serializeJson(doc, payload);
-    Serial.println("Created payload: " + payload);
+    Serial.println(payload);
     return payload;
 }
 

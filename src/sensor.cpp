@@ -133,10 +133,10 @@ SensorData SensorManager::readBME680() {
         return data;
     }
     
-    data.dataPoints[data.numDataPoints++] = {"temperature", static_cast<float>(bme.temperature)};
-    data.dataPoints[data.numDataPoints++] = {"humidity", static_cast<float>(bme.humidity)};
-    data.dataPoints[data.numDataPoints++] = {"pressure", static_cast<float>(bme.pressure / 100.0)};
-    data.dataPoints[data.numDataPoints++] = {"gas", static_cast<float>(bme.gas_resistance / 1000.0)};
+    data.dataPoints[data.numDataPoints++] = {"temperature", static_cast<float>(bme.temperature), static_cast<uint8_t>(SensorId::BME680)};
+    data.dataPoints[data.numDataPoints++] = {"humidity", static_cast<float>(bme.humidity), static_cast<uint8_t>(SensorId::BME680)};
+    data.dataPoints[data.numDataPoints++] = {"pressure", static_cast<float>(bme.pressure / 100.0), static_cast<uint8_t>(SensorId::BME680)};
+    data.dataPoints[data.numDataPoints++] = {"gas", static_cast<float>(bme.gas_resistance / 1000.0), static_cast<uint8_t>(SensorId::BME680)};
     
     return data;
 }
@@ -163,8 +163,8 @@ SensorData SensorManager::readSoilMoisture() {
     float moisturePercent = 100.0f * (moistureValue - SOIL_MOISTURE_AIR_VALUE) / 
                            (SOIL_MOISTURE_WATER_VALUE - SOIL_MOISTURE_AIR_VALUE);
     
-    data.dataPoints[data.numDataPoints++] = {"soil_moisture_raw", rawValue};
-    data.dataPoints[data.numDataPoints++] = {"soil_moisture_percent", moisturePercent};
+    data.dataPoints[data.numDataPoints++] = {"soil_moisture_raw", rawValue, static_cast<uint8_t>(SensorId::SOIL_MOISTURE)};
+    data.dataPoints[data.numDataPoints++] = {"soil_moisture_percent", moisturePercent, static_cast<uint8_t>(SensorId::SOIL_MOISTURE)};
     
     Serial.printf("Soil Moisture - Raw: %.2f, Percent: %.2f%%\n", rawValue, moisturePercent);
     
@@ -209,12 +209,11 @@ SensorData SensorManager::readBatteryMetrics() {
         100.0
     );
     
-    // Add metrics to data points
-    data.dataPoints[data.numDataPoints++] = {"battery_voltage", batteryVoltage};
-    data.dataPoints[data.numDataPoints++] = {"battery_percent", batteryPercent};
-    data.dataPoints[data.numDataPoints++] = {"battery_type", (float)static_cast<int>(BATTERY_TYPE) + 1.0};
+    data.dataPoints[data.numDataPoints++] = {"battery_voltage", batteryVoltage, static_cast<uint8_t>(SensorId::BATTERY)};
+    data.dataPoints[data.numDataPoints++] = {"battery_percent", batteryPercent, static_cast<uint8_t>(SensorId::BATTERY)};
+    data.dataPoints[data.numDataPoints++] = {"battery_type", (float)static_cast<int>(BATTERY_TYPE) + 1.0, static_cast<uint8_t>(SensorId::BATTERY)};
     
-    Serial.printf("Device Metrics - Battery: %.2fV (%.1f%%) Type: %d\n", 
+    Serial.printf("Battery Metrics - Voltage: %.2fV (%.1f%%) Type: %d\n", 
                  batteryVoltage, batteryPercent, static_cast<int>(BATTERY_TYPE));
     
     return data;
@@ -224,10 +223,8 @@ SensorData SensorManager::readNetworkMetrics() {
     SensorData data = {{{nullptr, 0}}, 0};
     
     int rssi = WiFi.isConnected() ? WiFi.RSSI() : -100;
-    data.dataPoints[data.numDataPoints++] = {"wifi_rssi", static_cast<float>(rssi)};
-    
-    // Add stored readings count as a metric
-    data.dataPoints[data.numDataPoints++] = {"stored_readings_count", static_cast<float>(storedReadings.count+1)};
+    data.dataPoints[data.numDataPoints++] = {"wifi_rssi", static_cast<float>(rssi), static_cast<uint8_t>(SensorId::NETWORK)};
+    data.dataPoints[data.numDataPoints++] = {"stored_readings_count", static_cast<float>(storedReadings.count+1), static_cast<uint8_t>(SensorId::NETWORK)};
     
     Serial.printf("Network Metrics - RSSI: %d dBm, Stored Readings: %d\n", 
                  rssi, storedReadings.count);

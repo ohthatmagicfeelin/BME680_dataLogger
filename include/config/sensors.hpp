@@ -3,6 +3,14 @@
 
 #include <Arduino.h>
 
+// Add this before the SensorType enum
+enum class SensorId : uint8_t {
+    BME680 = 1,
+    SOIL_MOISTURE = 2,
+    BATTERY = 3,
+    NETWORK = 4
+};
+
 // Sensor configuration
 enum class SensorType {
     BME680,

@@ -10,7 +10,6 @@ void storeReading(const SensorData& data) {
 
     StoredReading& reading = storedReadings.readings[storedReadings.count];
     reading.timestamp = timeState.lastKnownTime;
-    reading.rssi = -100;  // Default to poor signal
     reading.numDataPoints = 0;
     
     // Copy all data points
